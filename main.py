@@ -48,7 +48,10 @@ def _run():
         print("entry.png is larger than the 1 MiB cap", file=sys.stderr)
         return 1
     digest, amount = _copy_stream(_PICTURE, _TARGET)
-    if not _TARGET.is_file() or amount != len(data):
+    if not _TARGET.is_file():
+        print("entry.png copy did not appear", file=sys.stderr)
+        return 1
+    if amount != len(data):
         print("entry.png copy stopped early", file=sys.stderr)
         return 1
     if digest != _sha(data).hexdigest():
