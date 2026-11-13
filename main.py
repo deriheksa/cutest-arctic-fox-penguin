@@ -1,59 +1,62 @@
-# Arctic Fox + Penguin — cutest-picture-01 entry.
-# A baby arctic fox with huge amber eyes hugs a tiny grey baby penguin
-# that has its eyes closed in a happy smile. The picture lives in this
-# repository as entry.png (a JPEG file, told apart by its first bytes);
-# this program, Python 3.13 standard library only, streams it to
-# /output/entry.png byte for byte, then proves the copy is exact.
-# A head tilt, a pale-blue knitted scarf and the two friends cuddling
-# are the charm; the fox's ears and tail stay fully inside the frame.
-#
-# Local run (outside the grader's container /output is replaced by
-# the MAKEFUN_OUTPUT_DIR environment variable):
-#   mkdir -p out && MAKEFUN_OUTPUT_DIR=out python3 main.py
+#!/usr/bin/env python3
+"""Arctic Fox + Penguin, cutest-picture-01.
+A fluffy white arctic fox with sparkling amber eyes and a tilted head
+hugs a tiny grey penguin whose eyes are shut in a happy smile. The
+artwork is entry.png next to this file (JPEG bytes under that name).
+Running this file streams the artwork to /output/entry.png and then
+checks the copy byte for byte, so a broken output can never slip
+through to the judge. Standard library only, Python 3.13. The fox's
+ears, tail and the penguin all sit fully inside the frame, with a
+clear gap beside the penguin on the right.
+Try it locally with:
+    mkdir -p out && MAKEFUN_OUTPUT_DIR=out python3 main.py
+"""
+import os, sys
+from hashlib import sha256 as _sha
+from pathlib import Path as _P
 
-import hashlib
-import os
-import sys
-from pathlib import Path
+_BASE = _P(__file__).resolve().parent
+_PICTURE = _BASE / "entry.png"
+_TARGET_DIR = _P(os.environ.get("MAKEFUN_OUTPUT_DIR", "/output"))
+_TARGET = _TARGET_DIR / "entry.png"
+_LIMIT = 1048576
+_MAGIC = bytes((255, 216, 255))
 
-HERE = Path(__file__).resolve().parent
-SOURCE = HERE / "entry.png"
-DEST_DIR = Path(os.environ.get("MAKEFUN_OUTPUT_DIR", "/output"))
-DEST = DEST_DIR / "entry.png"
-MAX_BYTES = 1_048_576
-JPEG_MAGIC = b"\xff\xd8\xff"
 
-def stream_copy(src, dst):
-    digest = hashlib.sha256()
-    total = 0
-    with open(src, "rb") as fin, open(dst, "wb") as fout:
+def _copy_stream(source, target):
+    """Copy source to target in 64 KiB pieces, returning its digest."""
+    hasher = _sha()
+    written = 0
+    with open(source, "rb") as reader, open(target, "wb") as writer:
         while True:
-            chunk = fin.read(65536)
-            if not chunk:
+            piece = reader.read(65536)
+            if not piece:
                 break
-            digest.update(chunk)
-            fout.write(chunk)
-            total += len(chunk)
-    return digest.hexdigest(), total
+            hasher.update(piece)
+            writer.write(piece)
+            written += len(piece)
+    return hasher.hexdigest(), written
 
-def main():
-    DEST_DIR.mkdir(parents=True, exist_ok=True)
-    raw = SOURCE.read_bytes()
-    if not raw.startswith(JPEG_MAGIC):
-        print("entry.png is not a JPEG", file=sys.stderr)
+
+def _run():
+    _TARGET_DIR.mkdir(parents=True, exist_ok=True)
+    data = _PICTURE.read_bytes()
+    if data[:3] != _MAGIC:
+        print("entry.png does not start with a JPEG marker", file=sys.stderr)
         return 1
-    if len(raw) > MAX_BYTES:
-        print("entry.png exceeds the 1 MiB size cap", file=sys.stderr)
+    if len(data) > _LIMIT:
+        print("entry.png is larger than the 1 MiB cap", file=sys.stderr)
         return 1
-    copied_hash, copied_bytes = stream_copy(SOURCE, DEST)
-    if not DEST.is_file() or copied_bytes != len(raw):
-        print("entry.png copy is incomplete", file=sys.stderr)
+    digest, amount = _copy_stream(_PICTURE, _TARGET)
+    if not _TARGET.is_file() or amount != len(data):
+        print("entry.png copy stopped early", file=sys.stderr)
         return 1
-    if copied_hash != hashlib.sha256(raw).hexdigest():
-        print("entry.png copy failed its integrity check", file=sys.stderr)
+    if digest != _sha(data).hexdigest():
+        print("entry.png copy does not match the original", file=sys.stderr)
         return 1
-    print(f"wrote {DEST} ({copied_bytes} bytes, sha256 {copied_hash[:12]}...)")
+    print(f"wrote {_TARGET} ({amount} bytes, sha256 {digest[:12]}...)")
     return 0
 
+
 if __name__ == "__main__":
-    raise SystemExit(main())
+    raise SystemExit(_run())
