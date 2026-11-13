@@ -1,32 +1,56 @@
-# Arctic Fox + Penguin — cutest-picture-01 entry (Python 3.13, standard library only).
-# The picture is the entry.png beside this file; the program copies it to
-# /output/entry.png. The file is a JPEG (told apart by its first bytes);
-# the name stays entry.png either way, per the competition rules.
+# Arctic Fox + Penguin — cutest-picture-01 entry.
+# A baby arctic fox hugs a baby penguin. The picture lives in this
+# repository as entry.png (a JPEG file, told apart by its first bytes);
+# this program, Python 3.13 standard library only, streams it to
+# /output/entry.png byte for byte, then proves the copy is exact.
 #
-# Outside the grader's container, MAKEFUN_OUTPUT_DIR stands in for /output:
+# Local run (outside the grader's container /output is replaced by
+# the MAKEFUN_OUTPUT_DIR environment variable):
 #   mkdir -p out && MAKEFUN_OUTPUT_DIR=out python3 main.py
 
 import hashlib
 import os
-import shutil
+import sys
 from pathlib import Path
 
-src = Path(__file__).resolve().parent / "entry.png"
-out = Path(os.environ.get("MAKEFUN_OUTPUT_DIR", "/output")) / "entry.png"
-out.parent.mkdir(parents=True, exist_ok=True)
-shutil.copyfile(src, out)
+HERE = Path(__file__).resolve().parent
+SOURCE = HERE / "entry.png"
+DEST_DIR = Path(os.environ.get("MAKEFUN_OUTPUT_DIR", "/output"))
+DEST = DEST_DIR / "entry.png"
+MAX_BYTES = 1_048_576
+JPEG_MAGIC = b"\xff\xd8\xff"
 
-# Verify the copy is byte-identical: a truncated or corrupted output
-# must fail loudly here instead of shipping a broken image to the judge.
-# Also guard the competition's size cap (entry.png must stay under 1 MiB).
-def _sha256(path):
+def stream_copy(src, dst):
     digest = hashlib.sha256()
-    with open(path, "rb") as f:
-        for chunk in iter(lambda: f.read(1 << 20), b""):
+    total = 0
+    with open(src, "rb") as fin, open(dst, "wb") as fout:
+        while True:
+            chunk = fin.read(65536)
+            if not chunk:
+                break
             digest.update(chunk)
-    return digest.hexdigest()
+            fout.write(chunk)
+            total += len(chunk)
+    return digest.hexdigest(), total
 
-if _sha256(src) != _sha256(out):
-    raise SystemExit("entry.png copy failed integrity check")
-if out.stat().st_size > 1_048_576:
-    raise SystemExit("entry.png exceeds the 1 MiB size cap")
+def main():
+    DEST_DIR.mkdir(parents=True, exist_ok=True)
+    raw = SOURCE.read_bytes()
+    if not raw.startswith(JPEG_MAGIC):
+        print("entry.png is not a JPEG", file=sys.stderr)
+        return 1
+    if len(raw) > MAX_BYTES:
+        print("entry.png exceeds the 1 MiB size cap", file=sys.stderr)
+        return 1
+    copied_hash, copied_bytes = stream_copy(SOURCE, DEST)
+    if not DEST.is_file() or copied_bytes != len(raw):
+        print("entry.png copy is incomplete", file=sys.stderr)
+        return 1
+    if copied_hash != hashlib.sha256(raw).hexdigest():
+        print("entry.png copy failed its integrity check", file=sys.stderr)
+        return 1
+    print(f"wrote {DEST} ({copied_bytes} bytes, sha256 {copied_hash[:12]}...)")
+    return 0
+
+if __name__ == "__main__":
+    raise SystemExit(main())
