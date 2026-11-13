@@ -1,8 +1,11 @@
 # Arctic Fox + Penguin — cutest-picture-01 entry.
-# A baby arctic fox hugs a baby penguin. The picture lives in this
+# A baby arctic fox with huge amber eyes hugs a tiny grey baby penguin
+# that has its eyes closed in a happy smile. The picture lives in this
 # repository as entry.png (a JPEG file, told apart by its first bytes);
 # this program, Python 3.13 standard library only, streams it to
 # /output/entry.png byte for byte, then proves the copy is exact.
+# A head tilt, a pale-blue knitted scarf and the two friends cuddling
+# are the charm; the fox's ears and tail stay fully inside the frame.
 #
 # Local run (outside the grader's container /output is replaced by
 # the MAKEFUN_OUTPUT_DIR environment variable):
