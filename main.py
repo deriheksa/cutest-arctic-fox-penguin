@@ -18,6 +18,7 @@ shutil.copyfile(src, out)
 
 # Verify the copy is byte-identical: a truncated or corrupted output
 # must fail loudly here instead of shipping a broken image to the judge.
+# Also guard the competition's size cap (entry.png must stay under 1 MiB).
 def _sha256(path):
     digest = hashlib.sha256()
     with open(path, "rb") as f:
@@ -27,3 +28,5 @@ def _sha256(path):
 
 if _sha256(src) != _sha256(out):
     raise SystemExit("entry.png copy failed integrity check")
+if out.stat().st_size > 1_048_576:
+    raise SystemExit("entry.png exceeds the 1 MiB size cap")
