@@ -61,5 +61,8 @@ def _run():
     return 0
 
 
-if __name__ == "__main__":
+def _entry():
     raise SystemExit(_run())
+
+
+_entry()
