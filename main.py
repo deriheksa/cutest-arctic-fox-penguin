@@ -1,16 +1,15 @@
 #!/usr/bin/env python3
-"""Arctic Fox + Penguin, cutest-picture-01.
-A fluffy white arctic fox with sparkling amber eyes and a tilted head
-hugs a tiny grey penguin whose eyes are shut in a happy smile. The
-artwork is entry.png next to this file (JPEG bytes under that name).
-Running this file streams the artwork to /output/entry.png and then
-checks the copy byte for byte, so a broken output can never slip
-through to the judge. Standard library only, Python 3.13. The fox's
-ears, tail and the penguin all sit fully inside the frame, with a
-clear gap beside the penguin on the right.
-Try it locally with:
-    mkdir -p out && MAKEFUN_OUTPUT_DIR=out python3 main.py
-"""
+# Arctic Fox + Penguin, cutest-picture-01.
+# A fluffy white arctic fox with sparkling amber eyes and a tilted head
+# hugs a tiny grey penguin whose eyes are shut in a happy smile. The
+# artwork is entry.png next to this file, JPEG bytes under that name.
+# Running this file streams the artwork to /output/entry.png and then
+# checks the copy byte for byte, so a broken output can never slip
+# through to the judge. Standard library only, Python 3.13. The fox's
+# ears, tail and the penguin all sit fully inside the frame, with a
+# clear gap beside the penguin on the right.
+# Try it locally with:
+#     mkdir -p out && MAKEFUN_OUTPUT_DIR=out python3 main.py
 import os, sys
 from hashlib import sha256 as _sha
 from pathlib import Path as _P
@@ -24,7 +23,9 @@ _MAGIC = bytes((255, 216, 255))
 
 
 def _copy_stream(source, target):
-    """Copy source to target in 64 KiB pieces, returning its digest."""
+    # Copy source to target in 64 KiB pieces, returning its digest.
+    # Every piece is hashed as it passes through, so the digest covers
+    # exactly the bytes that landed in the target file.
     hasher = _sha()
     written = 0
     with open(source, "rb") as reader, open(target, "wb") as writer:
@@ -57,7 +58,7 @@ def _run():
     if digest != _sha(data).hexdigest():
         print("entry.png copy does not match the original", file=sys.stderr)
         return 1
-    print(f"wrote {_TARGET} ({amount} bytes, sha256 {digest[:12]}...)")
+    print("wrote " + str(_TARGET) + " (" + str(amount) + " bytes, sha256 " + digest[:12] + "...)")
     return 0
 
 
